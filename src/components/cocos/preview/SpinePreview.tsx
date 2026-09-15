@@ -35,6 +35,7 @@ export function SpinePreview({
   const hostRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PixiApplication | null>(null);
   const spineRef = useRef<SpineInstance | null>(null);
+  const layoutRef = useRef<(() => void) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [animations, setAnimations] = useState<string[]>([]);
@@ -148,20 +149,36 @@ export function SpinePreview({
         host.appendChild(app.view as unknown as Node);
         app.stage.addChild(spine);
 
+        /** Fit and center the spine using its current visual AABB (not root). */
         const layout = () => {
-          const w = skeletonData.width || 1;
-          const h = skeletonData.height || 1;
+          const screenW = app.screen.width;
+          const screenH = app.screen.height;
+          if (screenW < 1 || screenH < 1) return;
+
+          spine.update(0);
+          const bounds = spine.getLocalBounds();
+          const bw =
+            bounds.width > 1 ? bounds.width : skeletonData.width || 1;
+          const bh =
+            bounds.height > 1 ? bounds.height : skeletonData.height || 1;
+          const bx = bounds.width > 1 ? bounds.x : 0;
+          const by = bounds.height > 1 ? bounds.y : -bh;
+
           const fit =
-            Math.min(app.screen.width / w, app.screen.height / h) * 0.85;
+            Math.min(screenW / bw, screenH / bh) * 0.88;
           spine.scale.set(fit);
-          spine.x = app.screen.width / 2;
-          spine.y = app.screen.height / 2 + (h * fit) / 2;
+          // Map the visual center of the AABB to the viewport center.
+          spine.x = screenW / 2 - (bx + bw / 2) * fit;
+          spine.y = screenH / 2 - (by + bh / 2) * fit;
         };
+        layoutRef.current = layout;
+
+        if (initialAnimation) {
+          spine.state.setAnimation(0, initialAnimation, true);
+          spine.update(0);
+        }
         layout();
         app.renderer.on("resize", layout);
-
-        if (initialAnimation)
-          spine.state.setAnimation(0, initialAnimation, true);
 
         if (!cancelled) setReady(true);
       } catch (err) {
@@ -174,6 +191,7 @@ export function SpinePreview({
     return () => {
       cancelled = true;
       setReady(false);
+      layoutRef.current = null;
       appRef.current?.destroy(true, { children: true });
       appRef.current = null;
       spineRef.current = null;
@@ -185,7 +203,11 @@ export function SpinePreview({
   useEffect(() => {
     if (!ready || !animation) return;
     try {
-      spineRef.current?.state.setAnimation(0, animation, true);
+      const spine = spineRef.current;
+      if (!spine) return;
+      spine.state.setAnimation(0, animation, true);
+      spine.update(0);
+      layoutRef.current?.();
     } catch {
       /* animação inexistente no skeleton */
     }
@@ -194,8 +216,12 @@ export function SpinePreview({
   useEffect(() => {
     if (!ready || !skin) return;
     try {
-      spineRef.current?.skeleton.setSkinByName(skin);
-      spineRef.current?.skeleton.setSlotsToSetupPose();
+      const spine = spineRef.current;
+      if (!spine) return;
+      spine.skeleton.setSkinByName(skin);
+      spine.skeleton.setSlotsToSetupPose();
+      spine.update(0);
+      layoutRef.current?.();
     } catch {
       /* skin inexistente */
     }
