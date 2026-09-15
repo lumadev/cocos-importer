@@ -45,7 +45,11 @@ export class SearchEngine {
     return this.index.entities.filter((e) => e.path === path && !e.parentId);
   }
 
-  search(query: string, kinds?: EntityKind[], limit = 60): SearchResult[] {
+  /**
+   * Returns every match for `query` / `kinds`, ranked by score.
+   * Callers should paginate in the UI (the old hard limit of 60 hid results).
+   */
+  search(query: string, kinds?: EntityKind[]): SearchResult[] {
     const q = query.trim().toLowerCase();
     const results: SearchResult[] = [];
     for (const entity of this.index.entities) {
@@ -63,8 +67,10 @@ export class SearchEngine {
       const parent = this.parent(entity);
       results.push({ entity, score, ...(parent ? { parent } : {}) });
     }
-    results.sort((a, b) => b.score - a.score || a.entity.name.localeCompare(b.entity.name));
-    return results.slice(0, limit);
+    results.sort(
+      (a, b) => b.score - a.score || a.entity.name.localeCompare(b.entity.name),
+    );
+    return results;
   }
 }
 

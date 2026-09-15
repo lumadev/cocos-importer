@@ -12,10 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EntityRow } from "@/components/cocos/entity-ui";
+import {
+  InfiniteSentinel,
+  InfiniteStatus,
+  useInfiniteSlice,
+} from "@/components/cocos/infinite-list";
 import { useWorkspaceEngine } from "@/lib/cocos/useWorkspace";
 import { useProjectImport } from "@/lib/cocos/useProjectImport";
 import { downloadIndex } from "@/lib/cocos/storage";
-import { KIND_LABEL, type EntityKind } from "@/lib/cocos/types";
+import { KIND_LABEL, type EntityKind, type ProjectIndex } from "@/lib/cocos/types";
+import type { SearchResult } from "@/lib/cocos/searchEngine";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
@@ -72,7 +78,7 @@ function WorkspacePage() {
   const browsing = !q.trim() && !kind;
   const groups = useMemo(() => {
     if (!browsing) return [];
-    const map = new Map<string, typeof results>();
+    const map = new Map<string, SearchResult[]>();
     for (const r of results) {
       const list = map.get(r.entity.kind) ?? [];
       list.push(r);
@@ -185,6 +191,7 @@ function WorkspacePage() {
         <div className="mt-6 space-y-2">
           {groups.map(([k, items]) => {
             const isOpen = open[k] ?? false;
+            const totalInIndex = engine.index.stats.byKind[k as EntityKind] ?? items.length;
             return (
               <div
                 key={k}
@@ -202,49 +209,83 @@ function WorkspacePage() {
                     {KIND_LABEL[k as EntityKind] ?? k}
                   </span>
                   <span className="ml-auto font-mono text-xs text-muted-foreground">
-                    {items.length} {items.length === 1 ? "item" : "itens"}
+                    {totalInIndex} {totalInIndex === 1 ? "item" : "itens"}
                   </span>
                 </button>
                 {isOpen && (
-                  <ul className="space-y-2 border-t border-border/60 p-3">
-                    {items.map((result) => (
-                      <li key={result.entity.id}>
-                        <EntityRow
-                          workspaceId={id}
-                          entity={result.entity}
-                          parent={result.parent}
-                          index={engine.index}
-                          demo={workspace.demo}
-                        />
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="border-t border-border/60 p-3">
+                    <ResultList
+                      results={items}
+                      resetKey={`browse:${k}`}
+                      workspaceId={id}
+                      index={engine.index}
+                      demo={workspace.demo}
+                    />
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
       ) : (
-        <ul className="mt-6 space-y-2">
-          {results.length === 0 && (
-            <li className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-              Nenhum resultado para “{q}”.
-            </li>
+        <div className="mt-6">
+          {results.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              {q.trim()
+                ? `Nenhum resultado para “${q}”.`
+                : "Nenhum item neste filtro."}
+            </div>
+          ) : (
+            <ResultList
+              results={results}
+              resetKey={`filter:${kind}:${q}`}
+              workspaceId={id}
+              index={engine.index}
+              demo={workspace.demo}
+            />
           )}
-          {results.map((result) => (
-            <li key={result.entity.id}>
-              <EntityRow
-                workspaceId={id}
-                entity={result.entity}
-                parent={result.parent}
-                index={engine.index}
-                demo={workspace.demo}
-              />
-            </li>
-          ))}
-        </ul>
+        </div>
       )}
     </main>
+  );
+}
+
+function ResultList({
+  results,
+  resetKey,
+  workspaceId,
+  index,
+  demo,
+}: {
+  results: SearchResult[];
+  resetKey: string;
+  workspaceId: string;
+  index: ProjectIndex;
+  demo: boolean;
+}) {
+  const { visible, hasMore, loadMore, total, shown } = useInfiniteSlice(
+    results,
+    resetKey,
+  );
+
+  return (
+    <>
+      <ul className="space-y-2">
+        {visible.map((result) => (
+          <li key={result.entity.id}>
+            <EntityRow
+              workspaceId={workspaceId}
+              entity={result.entity}
+              parent={result.parent}
+              index={index}
+              demo={demo}
+            />
+          </li>
+        ))}
+      </ul>
+      <InfiniteSentinel active={hasMore} onVisible={loadMore} />
+      <InfiniteStatus shown={shown} total={total} hasMore={hasMore} />
+    </>
   );
 }
 
