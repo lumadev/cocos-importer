@@ -1,31 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import type { IndexedEntity, PreviewInfo, ProjectIndex } from "@/lib/cocos/types";
+import type {
+  IndexedEntity,
+  PreviewInfo,
+  ProjectIndex,
+} from "@/lib/cocos/types";
 import type { FileSource } from "@/lib/cocos/preview/source";
 import { PreviewMessage } from "./primitives";
 
-interface Player {
-  dispose: () => void;
-  animationState?: { setAnimation: (track: number, name: string, loop: boolean) => void };
-  skeleton?: {
-    setSkinByName: (name: string) => void;
-    setSlotsToSetupPose: () => void;
-    data: { animations: Array<{ name: string }>; skins: Array<{ name: string }> };
-  };
-}
+type PixiModule = typeof import("pixi.js");
+type SpineModule = typeof import("@pixi-spine/all-3.8");
+type PixiApplication = InstanceType<PixiModule["Application"]>;
+type SpineInstance = InstanceType<SpineModule["Spine"]>;
+type SpineTextureAtlas = InstanceType<SpineModule["TextureAtlas"]>;
+type SpineBaseTexture = InstanceType<PixiModule["BaseTexture"]>;
 
-/** Official Spine demo shipped in /public — used by the demo workspace. */
+/** Official Spine 3.8 demo shipped in /public — used by the demo workspace. */
 const DEMO = {
   skeleton: "/spine-demo/spineboy-pro.json",
   atlas: "/spine-demo/spineboy-pma.atlas",
 };
-
-/** Extracts the page image names declared inside a `.atlas` file. */
-function atlasPages(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => /\.(png|jpg|jpeg|webp)$/i.test(line));
-}
 
 export function SpinePreview({
   source,
@@ -40,7 +33,8 @@ export function SpinePreview({
   demo: boolean;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
+  const appRef = useRef<PixiApplication | null>(null);
+  const spineRef = useRef<SpineInstance | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [animations, setAnimations] = useState<string[]>([]);
@@ -50,6 +44,7 @@ export function SpinePreview({
 
   useEffect(() => {
     let cancelled = false;
+    let disposeAtlas: (() => void) | null = null;
 
     async function boot() {
       const host = hostRef.current;
@@ -58,68 +53,131 @@ export function SpinePreview({
         setError("Skeleton ou atlas não informados para este asset.");
         return;
       }
+
       try {
-        const [{ SpinePlayer }] = await Promise.all([
-          import("@esotericsoftware/spine-player"),
-          import("@esotericsoftware/spine-player/dist/spine-player.css"),
+        const [
+          PIXI,
+          { Spine, TextureAtlas, AtlasAttachmentLoader, SkeletonJson },
+        ] = await Promise.all([
+          import("pixi.js"),
+          import("@pixi-spine/all-3.8"),
         ]);
 
-        const config: Record<string, unknown> = {
-          alpha: true,
-          backgroundColor: "#00000000",
-          premultipliedAlpha: true,
-          showControls: true,
-          success: (player: Player) => {
-            if (cancelled) return;
-            const data = player.skeleton?.data;
-            const names = data?.animations.map((a) => a.name) ?? [];
-            setAnimations(names);
-            setSkins(data?.skins.map((s) => s.name) ?? []);
-            setAnimation((current) => (names.includes(current) ? current : (names[0] ?? "")));
-            setReady(true);
-          },
-          error: (_p: unknown, message: string) => {
-            if (!cancelled) setError(message || "Falha ao carregar o Spine.");
-          },
-        };
+        const skeletonPath = demo ? DEMO.skeleton : preview.skeleton!;
+        const atlasPath = demo ? DEMO.atlas : preview.atlas!;
+        const dir = atlasPath.slice(0, atlasPath.lastIndexOf("/") + 1);
 
-        if (demo) {
-          config['skeleton'] = DEMO.skeleton;
-          config['atlas'] = DEMO.atlas;
-        } else {
-          const atlasText = await source.text(preview.atlas!);
-          const skeletonUri = await source.dataUri(preview.skeleton!);
-          if (!atlasText || !skeletonUri) {
-            setError("Não foi possível ler os arquivos do Spine (.json/.atlas).");
-            return;
-          }
-          const dir = preview.atlas!.slice(0, preview.atlas!.lastIndexOf("/") + 1);
-          const raw: Record<string, string> = {
-            "skeleton.json": skeletonUri,
-            "skeleton.atlas": `data:text/plain;base64,${btoa(unescape(encodeURIComponent(atlasText)))}`,
-          };
-          for (const page of atlasPages(atlasText)) {
-            const uri = await source.dataUri(`${dir}${page}`);
-            if (uri) raw[page] = uri;
-          }
-          config['skeleton'] = "skeleton.json";
-          config['atlas'] = "skeleton.atlas";
-          config['rawDataURIs'] = raw;
+        const [atlasText, skeletonText] = demo
+          ? await Promise.all([
+              fetch(DEMO.atlas).then((r) => r.text()),
+              fetch(DEMO.skeleton).then((r) => r.text()),
+            ])
+          : await Promise.all([
+              source.text(atlasPath),
+              source.text(skeletonPath),
+            ]);
+
+        if (!atlasText || !skeletonText) {
+          setError("Não foi possível ler os arquivos do Spine (.json/.atlas).");
+          return;
         }
         if (cancelled) return;
 
+        // Resolves an atlas page (image) name to a URL the renderer can load.
+        const resolvePage = (name: string) =>
+          demo ? Promise.resolve(`${dir}${name}`) : source.url(`${dir}${name}`);
+
+        const textureLoader = (
+          path: string,
+          loaderFunction: (tex: SpineBaseTexture) => void,
+        ) => {
+          void (async () => {
+            const url = await resolvePage(path);
+            if (!url) {
+              loaderFunction(null as unknown as SpineBaseTexture);
+              return;
+            }
+            const baseTexture = PIXI.BaseTexture.from(url);
+            if (baseTexture.valid) {
+              loaderFunction(baseTexture as unknown as SpineBaseTexture);
+            } else {
+              baseTexture.once("loaded", () =>
+                loaderFunction(baseTexture as unknown as SpineBaseTexture),
+              );
+              baseTexture.once("error", () =>
+                loaderFunction(null as unknown as SpineBaseTexture),
+              );
+            }
+          })();
+        };
+
+        const atlas = await new Promise<SpineTextureAtlas>((resolve) => {
+          new TextureAtlas(atlasText, textureLoader, resolve as never);
+        });
+        if (cancelled) {
+          atlas.dispose();
+          return;
+        }
+        disposeAtlas = () => atlas.dispose();
+
+        const attachmentLoader = new AtlasAttachmentLoader(atlas);
+        const skeletonJson = new SkeletonJson(attachmentLoader);
+        const skeletonData = skeletonJson.readSkeletonData(skeletonText);
+
+        const spine = new Spine(skeletonData);
+        spineRef.current = spine;
+
+        const names = skeletonData.animations.map((a) => a.name);
+        const skinNames = skeletonData.skins.map((s) => s.name);
+        setAnimations(names);
+        setSkins(skinNames);
+        const initialAnimation = names.includes(animation)
+          ? animation
+          : (names[0] ?? "");
+        setAnimation(initialAnimation);
+
         host.innerHTML = "";
-        playerRef.current = new SpinePlayer(host, config as never) as unknown as Player;
+        const app = new PIXI.Application({
+          backgroundAlpha: 0,
+          antialias: true,
+          resizeTo: host,
+          autoDensity: true,
+          resolution: window.devicePixelRatio || 1,
+        });
+        appRef.current = app;
+        host.appendChild(app.view as unknown as Node);
+        app.stage.addChild(spine);
+
+        const layout = () => {
+          const w = skeletonData.width || 1;
+          const h = skeletonData.height || 1;
+          const fit =
+            Math.min(app.screen.width / w, app.screen.height / h) * 0.85;
+          spine.scale.set(fit);
+          spine.x = app.screen.width / 2;
+          spine.y = app.screen.height / 2 + (h * fit) / 2;
+        };
+        layout();
+        app.renderer.on("resize", layout);
+
+        if (initialAnimation)
+          spine.state.setAnimation(0, initialAnimation, true);
+
+        if (!cancelled) setReady(true);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : String(err));
       }
     }
 
     void boot();
     return () => {
       cancelled = true;
-      playerRef.current?.dispose();
-      playerRef.current = null;
+      setReady(false);
+      appRef.current?.destroy(true, { children: true });
+      appRef.current = null;
+      spineRef.current = null;
+      disposeAtlas?.();
     };
     // Recreate only when the files change; animation/skin are applied below.
   }, [source, preview.skeleton, preview.atlas, demo]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -127,7 +185,7 @@ export function SpinePreview({
   useEffect(() => {
     if (!ready || !animation) return;
     try {
-      playerRef.current?.animationState?.setAnimation(0, animation, true);
+      spineRef.current?.state.setAnimation(0, animation, true);
     } catch {
       /* animação inexistente no skeleton */
     }
@@ -136,8 +194,8 @@ export function SpinePreview({
   useEffect(() => {
     if (!ready || !skin) return;
     try {
-      playerRef.current?.skeleton?.setSkinByName(skin);
-      playerRef.current?.skeleton?.setSlotsToSetupPose();
+      spineRef.current?.skeleton.setSkinByName(skin);
+      spineRef.current?.skeleton.setSlotsToSetupPose();
     } catch {
       /* skin inexistente */
     }
@@ -193,14 +251,16 @@ export function SpinePreview({
 
       {demo && (
         <p className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
-          Demonstração usando o esqueleto oficial <strong>Spineboy</strong> da Spine. No projeto
-          real, o preview usa os arquivos do próprio asset (
-          <span className="font-mono">{entity.name}</span>).
+          Demonstração usando o esqueleto oficial <strong>Spineboy</strong>{" "}
+          (Spine 3.8) da Spine. No projeto real, o preview usa os arquivos do
+          próprio asset (<span className="font-mono">{entity.name}</span>).
         </p>
       )}
 
       <p className="truncate font-mono text-xs text-muted-foreground">
-        {demo ? `${DEMO.skeleton} · ${DEMO.atlas}` : `${preview.skeleton} · ${preview.atlas}`}
+        {demo
+          ? `${DEMO.skeleton} · ${DEMO.atlas}`
+          : `${preview.skeleton} · ${preview.atlas}`}
       </p>
     </div>
   );
