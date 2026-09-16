@@ -1,5 +1,6 @@
 /** Resolves project-relative file paths to blobs for the Preview panel. */
 import { loadDirHandle } from "../storage";
+import { isSafeRelativePath } from "../safePath";
 import type { ProjectIndex } from "../types";
 import { createDemoFile } from "./demoAssets";
 
@@ -13,6 +14,8 @@ export interface FileSource {
   text(path: string): Promise<string | null>;
   /** Data URI (needed by the Spine player). */
   dataUri(path: string): Promise<string | null>;
+  /** Revokes object URLs and drops in-memory blob cache. */
+  dispose(): void;
 }
 
 function blobToDataUri(blob: Blob): Promise<string> {
@@ -57,6 +60,13 @@ function makeSource(
       const blob = await get(path);
       return blob ? blobToDataUri(blob) : null;
     },
+    dispose() {
+      for (const value of urls.values()) {
+        if (value) URL.revokeObjectURL(value);
+      }
+      urls.clear();
+      blobs.clear();
+    },
   };
 }
 
@@ -66,6 +76,7 @@ interface PermissionHandle extends FileSystemDirectoryHandle {
 }
 
 async function readFromDisk(root: FileSystemDirectoryHandle, path: string): Promise<Blob | null> {
+  if (!isSafeRelativePath(path)) return null;
   const parts = path.split("/").filter(Boolean);
   const fileName = parts.pop();
   if (!fileName) return null;

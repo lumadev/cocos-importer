@@ -47,12 +47,18 @@ export function PreviewDialog({
     }
 
     let cancelled = false;
+    let createdSource: FileSource | null = null;
     setSource(null);
     setError(null);
     setLoading(true);
     createFileSource(workspaceId, index, demo)
       .then((created) => {
-        if (!cancelled) setSource(created);
+        if (cancelled) {
+          created.dispose();
+          return;
+        }
+        createdSource = created;
+        setSource(created);
       })
       .catch((err) => {
         if (!cancelled) {
@@ -64,6 +70,8 @@ export function PreviewDialog({
       });
     return () => {
       cancelled = true;
+      createdSource?.dispose();
+      createdSource = null;
     };
   }, [open, workspaceId, index, demo]);
 

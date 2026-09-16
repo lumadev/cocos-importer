@@ -2,6 +2,7 @@
  * Reads individual files (package.json, docs, etc.) from the directory
  * handle stored for an imported workspace, on demand, in the browser.
  */
+import { isSafeRelativePath } from "./safePath";
 import { loadDirHandle } from "./storage";
 
 export type ProjectFileStatus =
@@ -21,6 +22,7 @@ async function resolveFileHandle(
   root: FileSystemDirectoryHandle,
   path: string,
 ): Promise<FileSystemFileHandle | null> {
+  if (!isSafeRelativePath(path)) return null;
   const parts = path.split("/").filter(Boolean);
   const fileName = parts.pop();
   if (!fileName) return null;
