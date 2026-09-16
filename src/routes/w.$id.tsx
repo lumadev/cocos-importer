@@ -46,10 +46,10 @@ export const Route = createFileRoute("/w/$id")({
       },
     ],
   }),
-  component: WorkspacePage,
+  component: WorkspaceIndex,
 });
 
-function WorkspacePage() {
+function WorkspaceIndex() {
   const { id } = Route.useParams();
   const { q, kind } = Route.useSearch();
   const navigate = useNavigate({ from: "/w/$id/" });
