@@ -5,7 +5,7 @@ import { ArrowLeft, FolderOpen } from "lucide-react";
 import { ActiveProjectBadge } from "@/components/ActiveProjectBadge";
 import { useActiveWorkspace } from "@/lib/activeWorkspace";
 
-export const Route = createFileRoute("/cocos/")({
+export const Route = createFileRoute("/cocos")({
   head: () => ({
     meta: [
       {
@@ -28,10 +28,10 @@ export const Route = createFileRoute("/cocos/")({
       },
     ],
   }),
-  component: CocosBrowser,
+  component: CocosIndex,
 });
 
-function CocosBrowser() {
+function CocosIndex() {
   const navigate = useNavigate();
   const active = useActiveWorkspace();
   const [mounted, setMounted] = useState(false);

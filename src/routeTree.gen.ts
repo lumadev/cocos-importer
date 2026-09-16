@@ -10,10 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CocosIndexRouteImport } from './routes/cocos/index'
-import { Route as ComandosIndexRouteImport } from './routes/comandos/index'
-import { Route as TestDatasIndexRouteImport } from './routes/test-datas/index'
-import { Route as WIdIndexRouteImport } from './routes/w.$id.index'
+import { Route as CocosRouteImport } from './routes/cocos'
+import { Route as ComandosRouteImport } from './routes/comandos'
+import { Route as TestDatasRouteImport } from './routes/test-datas'
+import { Route as WIdRouteImport } from './routes/w.$id'
 import { Route as WIdEEntityIdRouteImport } from './routes/w.$id.e.$entityId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -21,65 +21,65 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CocosIndexRoute = CocosIndexRouteImport.update({
-  id: '/cocos/',
-  path: '/cocos/',
+const CocosRoute = CocosRouteImport.update({
+  id: '/cocos',
+  path: '/cocos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ComandosIndexRoute = ComandosIndexRouteImport.update({
-  id: '/comandos/',
-  path: '/comandos/',
+const ComandosRoute = ComandosRouteImport.update({
+  id: '/comandos',
+  path: '/comandos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TestDatasIndexRoute = TestDatasIndexRouteImport.update({
-  id: '/test-datas/',
-  path: '/test-datas/',
+const TestDatasRoute = TestDatasRouteImport.update({
+  id: '/test-datas',
+  path: '/test-datas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WIdIndexRoute = WIdIndexRouteImport.update({
-  id: '/w/$id/',
-  path: '/w/$id/',
+const WIdRoute = WIdRouteImport.update({
+  id: '/w/$id',
+  path: '/w/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WIdEEntityIdRoute = WIdEEntityIdRouteImport.update({
-  id: '/w/$id/e/$entityId',
-  path: '/w/$id/e/$entityId',
-  getParentRoute: () => rootRouteImport,
+  id: '/e/$entityId',
+  path: '/e/$entityId',
+  getParentRoute: () => WIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/cocos/': typeof CocosIndexRoute
-  '/comandos/': typeof ComandosIndexRoute
-  '/test-datas/': typeof TestDatasIndexRoute
-  '/w/$id/': typeof WIdIndexRoute
+  '/cocos': typeof CocosRoute
+  '/comandos': typeof ComandosRoute
+  '/test-datas': typeof TestDatasRoute
+  '/w/$id': typeof WIdRouteWithChildren
   '/w/$id/e/$entityId': typeof WIdEEntityIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/cocos': typeof CocosIndexRoute
-  '/comandos': typeof ComandosIndexRoute
-  '/test-datas': typeof TestDatasIndexRoute
-  '/w/$id': typeof WIdIndexRoute
+  '/cocos': typeof CocosRoute
+  '/comandos': typeof ComandosRoute
+  '/test-datas': typeof TestDatasRoute
+  '/w/$id': typeof WIdRouteWithChildren
   '/w/$id/e/$entityId': typeof WIdEEntityIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/cocos/': typeof CocosIndexRoute
-  '/comandos/': typeof ComandosIndexRoute
-  '/test-datas/': typeof TestDatasIndexRoute
-  '/w/$id/': typeof WIdIndexRoute
+  '/cocos': typeof CocosRoute
+  '/comandos': typeof ComandosRoute
+  '/test-datas': typeof TestDatasRoute
+  '/w/$id': typeof WIdRouteWithChildren
   '/w/$id/e/$entityId': typeof WIdEEntityIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/cocos/'
-    | '/comandos/'
-    | '/test-datas/'
-    | '/w/$id/'
+    | '/cocos'
+    | '/comandos'
+    | '/test-datas'
+    | '/w/$id'
     | '/w/$id/e/$entityId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -92,20 +92,19 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/cocos/'
-    | '/comandos/'
-    | '/test-datas/'
-    | '/w/$id/'
+    | '/cocos'
+    | '/comandos'
+    | '/test-datas'
+    | '/w/$id'
     | '/w/$id/e/$entityId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CocosIndexRoute: typeof CocosIndexRoute
-  ComandosIndexRoute: typeof ComandosIndexRoute
-  TestDatasIndexRoute: typeof TestDatasIndexRoute
-  WIdIndexRoute: typeof WIdIndexRoute
-  WIdEEntityIdRoute: typeof WIdEEntityIdRoute
+  CocosRoute: typeof CocosRoute
+  ComandosRoute: typeof ComandosRoute
+  TestDatasRoute: typeof TestDatasRoute
+  WIdRoute: typeof WIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -117,51 +116,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cocos/': {
-      id: '/cocos/'
+    '/cocos': {
+      id: '/cocos'
       path: '/cocos'
-      fullPath: '/cocos/'
-      preLoaderRoute: typeof CocosIndexRouteImport
+      fullPath: '/cocos'
+      preLoaderRoute: typeof CocosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/comandos/': {
-      id: '/comandos/'
+    '/comandos': {
+      id: '/comandos'
       path: '/comandos'
-      fullPath: '/comandos/'
-      preLoaderRoute: typeof ComandosIndexRouteImport
+      fullPath: '/comandos'
+      preLoaderRoute: typeof ComandosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/test-datas/': {
-      id: '/test-datas/'
+    '/test-datas': {
+      id: '/test-datas'
       path: '/test-datas'
-      fullPath: '/test-datas/'
-      preLoaderRoute: typeof TestDatasIndexRouteImport
+      fullPath: '/test-datas'
+      preLoaderRoute: typeof TestDatasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/w/$id/': {
-      id: '/w/$id/'
+    '/w/$id': {
+      id: '/w/$id'
       path: '/w/$id'
-      fullPath: '/w/$id/'
-      preLoaderRoute: typeof WIdIndexRouteImport
+      fullPath: '/w/$id'
+      preLoaderRoute: typeof WIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/w/$id/e/$entityId': {
       id: '/w/$id/e/$entityId'
-      path: '/w/$id/e/$entityId'
+      path: '/e/$entityId'
       fullPath: '/w/$id/e/$entityId'
       preLoaderRoute: typeof WIdEEntityIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof WIdRoute
     }
   }
 }
 
+interface WIdRouteChildren {
+  WIdEEntityIdRoute: typeof WIdEEntityIdRoute
+}
+
+const WIdRouteChildren: WIdRouteChildren = {
+  WIdEEntityIdRoute: WIdEEntityIdRoute,
+}
+
+const WIdRouteWithChildren = WIdRoute._addFileChildren(WIdRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CocosIndexRoute: CocosIndexRoute,
-  ComandosIndexRoute: ComandosIndexRoute,
-  TestDatasIndexRoute: TestDatasIndexRoute,
-  WIdIndexRoute: WIdIndexRoute,
-  WIdEEntityIdRoute: WIdEEntityIdRoute,
+  CocosRoute: CocosRoute,
+  ComandosRoute: ComandosRoute,
+  TestDatasRoute: TestDatasRoute,
+  WIdRoute: WIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

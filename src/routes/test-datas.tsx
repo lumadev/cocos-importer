@@ -11,7 +11,7 @@ import {
 
 const TEST_DATAS_PATH = "docs/testdata/TEST_DATAS.md";
 
-export const Route = createFileRoute("/test-datas/")({
+export const Route = createFileRoute("/test-datas")({
   head: () => ({
     meta: [
       { title: "Test Datas / Mocks — Auxiliador Dev" },
@@ -28,10 +28,10 @@ export const Route = createFileRoute("/test-datas/")({
       },
     ],
   }),
-  component: TestDatasPage,
+  component: TestDatasIndex,
 });
 
-function TestDatasPage() {
+function TestDatasIndex() {
   const active = useActiveWorkspace();
   const [status, setStatus] = useState<ProjectFileStatus | "loading">(
     "loading",
@@ -97,29 +97,29 @@ function TestDatasPage() {
       )}
 
       {status === "unavailable" && !active && (
-        <EmptyState message="Nenhum projeto selecionado. Volte para a tela inicial e selecione ou importe um projeto." />
+        <TestDatasEmptyState message="Nenhum projeto selecionado. Volte para a tela inicial e selecione ou importe um projeto." />
       )}
 
       {status === "unavailable" && active && (
-        <EmptyState message="A pasta deste projeto não está mais acessível neste navegador. Reimporte-o na tela inicial." />
+        <TestDatasEmptyState message="A pasta deste projeto não está mais acessível neste navegador. Reimporte-o na tela inicial." />
       )}
 
       {status === "permission" && (
-        <EmptyState message="Permissão de leitura da pasta do projeto foi negada. Reimporte o projeto para conceder acesso novamente." />
+        <TestDatasEmptyState message="Permissão de leitura da pasta do projeto foi negada. Reimporte o projeto para conceder acesso novamente." />
       )}
 
       {status === "unsupported" && (
-        <EmptyState message="Seu navegador não suporta a leitura local de pastas. Use Chrome, Edge ou Opera em desktop." />
+        <TestDatasEmptyState message="Seu navegador não suporta a leitura local de pastas. Use Chrome, Edge ou Opera em desktop." />
       )}
 
       {status === "missing" && (
-        <EmptyState
+        <TestDatasEmptyState
           message={`Não foi encontrado o arquivo ${TEST_DATAS_PATH} neste projeto.`}
         />
       )}
 
       {status === "demo" && (
-        <EmptyState message="O projeto de demonstração não possui test datas reais. Importe um projeto para ver a lista." />
+        <TestDatasEmptyState message="O projeto de demonstração não possui test datas reais. Importe um projeto para ver a lista." />
       )}
 
       {status === "ready" && content !== null && (
@@ -133,7 +133,7 @@ function TestDatasPage() {
   );
 }
 
-function EmptyState({ message }: { message: string }) {
+function TestDatasEmptyState({ message }: { message: string }) {
   return (
     <section className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
       <Database className="mx-auto size-10 text-muted-foreground" />

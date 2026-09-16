@@ -67,7 +67,7 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Home,
+  component: AuxiliadorDevIndex,
 });
 
 interface ToolCard {
@@ -107,7 +107,7 @@ const tools: ToolCard[] = [
   },
 ];
 
-function Home() {
+function AuxiliadorDevIndex() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectOpen, setSelectOpen] = useState(false);

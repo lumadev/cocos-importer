@@ -28,7 +28,7 @@ const searchSchema = z.object({
   kind: fallback(z.string(), "").default(""),
 });
 
-export const Route = createFileRoute("/w/$id/")({
+export const Route = createFileRoute("/w/$id")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
@@ -172,13 +172,13 @@ function WorkspacePage() {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <FilterChip
+        <WorkspaceSearchFilter
           active={!kind}
           label="Tudo"
           onClick={() => setSearch({ kind: "" })}
         />
         {kinds.map(([k, count]) => (
-          <FilterChip
+          <WorkspaceSearchFilter
             key={k}
             active={kind === k}
             label={`${KIND_LABEL[k as EntityKind] ?? k} (${count})`}
@@ -214,7 +214,7 @@ function WorkspacePage() {
                 </button>
                 {isOpen && (
                   <div className="border-t border-border/60 p-3">
-                    <ResultList
+                    <WorkspaceSearchResultList
                       results={items}
                       resetKey={`browse:${k}`}
                       workspaceId={id}
@@ -236,7 +236,7 @@ function WorkspacePage() {
                 : "Nenhum item neste filtro."}
             </div>
           ) : (
-            <ResultList
+            <WorkspaceSearchResultList
               results={results}
               resetKey={`filter:${kind}:${q}`}
               workspaceId={id}
@@ -250,7 +250,7 @@ function WorkspacePage() {
   );
 }
 
-function ResultList({
+function WorkspaceSearchResultList({
   results,
   resetKey,
   workspaceId,
@@ -289,7 +289,7 @@ function ResultList({
   );
 }
 
-function FilterChip({
+function WorkspaceSearchFilter({
   active,
   label,
   onClick,

@@ -14,7 +14,7 @@ import { useActiveWorkspace } from "@/lib/activeWorkspace";
 import { ActiveProjectBadge } from "@/components/ActiveProjectBadge";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/comandos/")({
+export const Route = createFileRoute("/comandos")({
   head: () => ({
     meta: [
       { title: "Comandos NPM — Auxiliador Dev" },
@@ -31,10 +31,10 @@ export const Route = createFileRoute("/comandos/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: ComandosPage,
+  component: ComandosIndex,
 });
 
-function ComandosPage() {
+function ComandosIndex() {
   const active = useActiveWorkspace();
   const { status, scripts } = useNpmScripts(
     active?.id ?? null,
@@ -79,7 +79,7 @@ function ComandosPage() {
         )}
 
         {status === "unavailable" && !active && (
-          <EmptyState
+          <ComandosEmptyState
             icon={
               <FolderOpen className="mx-auto size-10 text-muted-foreground" />
             }
@@ -88,7 +88,7 @@ function ComandosPage() {
         )}
 
         {status === "unavailable" && active && (
-          <EmptyState
+          <ComandosEmptyState
             icon={
               <FolderOpen className="mx-auto size-10 text-muted-foreground" />
             }
@@ -97,7 +97,7 @@ function ComandosPage() {
         )}
 
         {status === "permission" && (
-          <EmptyState
+          <ComandosEmptyState
             icon={
               <FolderOpen className="mx-auto size-10 text-muted-foreground" />
             }
@@ -106,7 +106,7 @@ function ComandosPage() {
         )}
 
         {status === "unsupported" && (
-          <EmptyState
+          <ComandosEmptyState
             icon={
               <Terminal className="mx-auto size-10 text-muted-foreground" />
             }
@@ -115,7 +115,7 @@ function ComandosPage() {
         )}
 
         {status === "missing" && (
-          <EmptyState
+          <ComandosEmptyState
             icon={
               <Terminal className="mx-auto size-10 text-muted-foreground" />
             }
@@ -124,7 +124,7 @@ function ComandosPage() {
         )}
 
         {status === "invalid" && (
-          <EmptyState
+          <ComandosEmptyState
             icon={
               <Terminal className="mx-auto size-10 text-muted-foreground" />
             }
@@ -133,7 +133,7 @@ function ComandosPage() {
         )}
 
         {status === "demo" && (
-          <EmptyState
+          <ComandosEmptyState
             icon={
               <Terminal className="mx-auto size-10 text-muted-foreground" />
             }
@@ -142,7 +142,7 @@ function ComandosPage() {
         )}
 
         {status === "ready" && entries.length === 0 && (
-          <EmptyState
+          <ComandosEmptyState
             icon={
               <Terminal className="mx-auto size-10 text-muted-foreground" />
             }
@@ -152,14 +152,14 @@ function ComandosPage() {
 
         {status === "ready" &&
           entries.map(([name, command]) => (
-            <CommandCard key={name} name={name} command={command} />
+            <NpmCommandCard key={name} name={name} command={command} />
           ))}
       </section>
     </main>
   );
 }
 
-function EmptyState({
+function ComandosEmptyState({
   icon,
   message,
 }: {
@@ -174,7 +174,7 @@ function EmptyState({
   );
 }
 
-function CommandCard({ name, command }: { name: string; command: string }) {
+function NpmCommandCard({ name, command }: { name: string; command: string }) {
   const [copied, setCopied] = useState(false);
   const runCommand = `pnpm run ${name}`;
 

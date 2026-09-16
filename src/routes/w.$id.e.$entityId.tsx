@@ -25,10 +25,10 @@ export const Route = createFileRoute("/w/$id/e/$entityId")({
       },
     ],
   }),
-  component: EntityPage,
+  component: WorkspaceEntity,
 });
 
-function EntityPage() {
+function WorkspaceEntity() {
   const { id, entityId } = Route.useParams();
   const { engine, workspace, loading } = useWorkspaceEngine(id);
   const [filter, setFilter] = useState("");

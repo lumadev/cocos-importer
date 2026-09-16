@@ -12,7 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
-function NotFoundComponent() {
+function NotFoundPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -34,7 +34,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ApplicationErrorPage({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -100,13 +100,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
   }),
-  shellComponent: RootShell,
-  component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
+  shellComponent: ApplicationShell,
+  component: ApplicationRoot,
+  notFoundComponent: NotFoundPage,
+  errorComponent: ApplicationErrorPage,
 });
 
-function RootShell({ children }: { children: ReactNode }) {
+function ApplicationShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
@@ -120,7 +120,7 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-function RootComponent() {
+function ApplicationRoot() {
   const { queryClient } = Route.useRouteContext();
 
   return (
