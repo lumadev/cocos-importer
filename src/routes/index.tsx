@@ -91,7 +91,7 @@ const tools: ToolCard[] = [
   },
   {
     id: "test-datas",
-    title: "Listar Test Datas / Mocks",
+    title: "Listar Test Datas",
     description:
       "Lista de test datas e mocks com links rápidos para acessar o localhost durante o desenvolvimento.",
     icon: <Database className="size-6" />,

@@ -23,13 +23,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/test-datas")({
   head: () => ({
     meta: [
-      { title: "Test Datas / Mocks — Auxiliador Dev" },
+      { title: "Test Datas — Auxiliador Dev" },
       {
         name: "description",
         content:
           "Lista de test datas e mocks com links rápidos para localhost.",
       },
-      { property: "og:title", content: "Test Datas / Mocks — Auxiliador Dev" },
+      { property: "og:title", content: "Test Datas — Auxiliador Dev" },
       {
         property: "og:description",
         content:
@@ -77,7 +77,7 @@ function TestDatasIndex() {
           Ferramenta
         </span>
         <h1 className="mt-3 text-4xl font-extrabold tracking-tight">
-          Test Datas / Mocks
+          Test Datas
         </h1>
         <p className="mt-3 max-w-xl text-muted-foreground">
           Catálogo parseado de{" "}
